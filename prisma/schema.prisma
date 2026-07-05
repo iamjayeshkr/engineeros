@@ -1,0 +1,259 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ─────────────────────────────────
+enum GoalType {
+  LONG_TERM
+  QUARTERLY
+  MONTHLY
+  WEEKLY
+  DAILY
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Status {
+  NOT_STARTED
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+enum Platform {
+  LEETCODE
+  CODEFORCES
+  GFG
+  OTHER
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ProjectKind {
+  COMPANY_WEBSITE
+  FLAGSHIP
+  OTHER
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum AppStage {
+  APPLIED
+  OA
+  INTERVIEW
+  OFFER
+  REJECTED
+}
+
+enum LearningType {
+  BOOK
+  COURSE
+  ARTICLE
+  VIDEO
+}
+
+// ── Identity ──────────────────────────────
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  avatarUrl     String?
+  careerScore   Int      @default(0)
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  goals          Goal[]
+  dsaProblems    DsaProblem[]
+  roadmapItems   RoadmapItem[]
+  projects       Project[]
+  applications   Application[]
+  resumeVersions ResumeVersion[]
+  learningItems  LearningItem[]
+  studySessions  StudySession[]
+}
+
+// ── Goals ─────────────────────────────────
+model Goal {
+  id           String    @id @default(cuid())
+  userId       String
+  parentId     String?
+  title        String
+  type         GoalType
+  priority     Priority  @default(MEDIUM)
+  tags         String[]  @default([])
+  estHours     Float?
+  actualHours  Float?
+  progress     Int       @default(0)
+  status       Status    @default(NOT_STARTED)
+  dependsOnIds String[]  @default([])
+  startDate    DateTime?
+  dueDate      DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Goal?  @relation("GoalHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Goal[] @relation("GoalHierarchy")
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+}
+
+// ── DSA Tracker ───────────────────────────
+model DsaProblem {
+  id             String     @id @default(cuid())
+  userId         String
+  title          String
+  platform       Platform
+  difficulty     Difficulty
+  topic          String[]   @default([])
+  companyTags    String[]   @default([])
+  timeTakenMins  Int?
+  mistakes       String?
+  confidence     Int        @default(3)
+  revisionCount  Int        @default(0)
+  bookmarked     Boolean    @default(false)
+  solvedAt       DateTime   @default(now())
+  nextRevisionAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, solvedAt])
+  @@index([userId, nextRevisionAt])
+}
+
+// ── Backend Roadmap ───────────────────────
+model RoadmapItem {
+  id         String   @id @default(cuid())
+  userId     String
+  topic      String
+  category   String
+  confidence Int      @default(1)
+  progress   Int      @default(0)
+  notes      String?
+  resources  Json?
+  projectIds String[] @default([])
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, category])
+}
+
+// ── Projects (Company Website + Flagship share this) ──
+model Project {
+  id          String      @id @default(cuid())
+  userId      String
+  name        String
+  kind        ProjectKind
+  status      Status      @default(NOT_STARTED)
+  owner       String?
+  risk        RiskLevel?
+  estHours    Float?
+  actualHours Float?
+  metadata    Json?
+  createdAt   DateTime    @default(now())
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks ProjectTask[]
+
+  @@index([userId, kind])
+}
+
+model ProjectTask {
+  id        String @id @default(cuid())
+  projectId String
+  title     String
+  phase     String
+  status    Status @default(NOT_STARTED)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, phase])
+}
+
+// ── Interview Tracker ─────────────────────
+model Application {
+  id        String   @id @default(cuid())
+  userId    String
+  company   String
+  role      String
+  stage     AppStage @default(APPLIED)
+  appliedAt DateTime @default(now())
+
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rounds InterviewRound[]
+
+  @@index([userId, stage])
+}
+
+model InterviewRound {
+  id            String    @id @default(cuid())
+  applicationId String
+  roundName     String
+  scheduledAt   DateTime?
+  feedback      String?
+  result        String?
+  notes         String?
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+// ── Resume ────────────────────────────────
+model ResumeVersion {
+  id          String   @id @default(cuid())
+  userId      String
+  label       String
+  targetRole  String?
+  fileUrl     String?
+  starStories Json?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Learning ──────────────────────────────
+model LearningItem {
+  id         String       @id @default(cuid())
+  userId     String
+  title      String
+  type       LearningType
+  status     Status       @default(NOT_STARTED)
+  notes      String?
+  highlights Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Study Sessions (drives streaks / heatmap / analytics) ──
+model StudySession {
+  id       String   @id @default(cuid())
+  userId   String
+  date     DateTime @db.Date
+  category String
+  minutes  Int
+  deepWork Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, category])
+  @@index([userId, date])
+}
