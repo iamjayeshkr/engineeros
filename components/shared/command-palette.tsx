@@ -17,8 +17,15 @@ export function CommandPalette() {
       }
       if (e.key === "Escape") setOpen(false);
     }
+    function handleTogglePalette() {
+      setOpen((prev) => !prev);
+    }
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("toggle-command-palette", handleTogglePalette);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("toggle-command-palette", handleTogglePalette);
+    };
   }, []);
 
   const navigate = useCallback(

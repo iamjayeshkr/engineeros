@@ -28,8 +28,10 @@ export async function createClient() {
   );
 }
 
+import { cache } from "react";
+
 // Convenience: throws-if-missing helper for Server Components that require auth.
-export async function requireUser() {
+export const requireUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -39,4 +41,4 @@ export async function requireUser() {
     throw new Error("UNAUTHENTICATED");
   }
   return user;
-}
+});

@@ -1,10 +1,15 @@
+"use client";
+
 import { Bell, Command } from "lucide-react";
 import { StudyLoggerButton } from "@/components/shared/study-logger";
 
 export function Topbar({ userEmail }: { userEmail?: string | null }) {
   return (
     <header className="flex h-14 items-center justify-between border-b border-border bg-base-950/80 px-4 backdrop-blur-xs">
-      <button className="flex items-center gap-2 rounded-md border border-border bg-base-900 px-2.5 py-1 text-xs text-zinc-500 hover:text-zinc-300">
+      <button 
+        onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
+        className="flex items-center gap-2 rounded-md border border-border bg-base-900 px-2.5 py-1 text-xs text-zinc-500 hover:text-zinc-300"
+      >
         <Command className="h-3.5 w-3.5" />
         Search or jump to…
         <kbd className="ml-2 rounded bg-base-800 px-1 text-[10px]">⌘K</kbd>
