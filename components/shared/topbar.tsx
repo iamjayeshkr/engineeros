@@ -1,7 +1,6 @@
 "use client";
 
 import { Bell, Command } from "lucide-react";
-import { StudyLoggerButton } from "@/components/shared/study-logger";
 
 export function Topbar({ userEmail }: { userEmail?: string | null }) {
   return (
@@ -16,8 +15,6 @@ export function Topbar({ userEmail }: { userEmail?: string | null }) {
       </button>
 
       <div className="flex items-center gap-4">
-        <StudyLoggerButton />
-        
         <button className="text-zinc-400 hover:text-zinc-200">
           <Bell className="h-4.5 w-4.5" />
         </button>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, SETTINGS_ITEM } from "@/lib/constants/nav";
+import { StudyLoggerButton } from "@/components/shared/study-logger";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -44,6 +45,7 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-auto pt-2 border-t border-border space-y-2">
+        <StudyLoggerButton className="w-full justify-center bg-zinc-900 border-zinc-800 hover:bg-zinc-800 py-2" />
         <Link
           href={SETTINGS_ITEM.href}
           className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-zinc-400 hover:bg-base-800 hover:text-zinc-200"
