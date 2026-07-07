@@ -20,6 +20,7 @@ export const resumeRepository = {
     return prisma.resumeVersion.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
   },
 
@@ -35,16 +36,18 @@ export const resumeRepository = {
     });
   },
 
-  async updateResume(id: string, data: UpdateResumeInput) {
+  async updateResume(id: string, userId: string, data: UpdateResumeInput) {
+    // Extended-where scoping: filters by id AND userId, so it throws
+    // "not found" (P2025) rather than updating another user's resume.
     return prisma.resumeVersion.update({
-      where: { id },
+      where: { id, userId },
       data,
     });
   },
 
-  async deleteResume(id: string) {
+  async deleteResume(id: string, userId: string) {
     return prisma.resumeVersion.delete({
-      where: { id },
+      where: { id, userId },
     });
   },
 };

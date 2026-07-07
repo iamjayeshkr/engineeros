@@ -23,6 +23,7 @@ export const learningRepository = {
     return prisma.learningItem.findMany({
       where: { userId },
       orderBy: { title: "asc" },
+      take: 1000,
     });
   },
 
@@ -39,16 +40,18 @@ export const learningRepository = {
     });
   },
 
-  async updateLearningItem(id: string, data: UpdateLearningInput) {
+  async updateLearningItem(id: string, userId: string, data: UpdateLearningInput) {
+    // Extended-where scoping: filters by id AND userId, so it throws
+    // "not found" (P2025) rather than updating another user's learning item.
     return prisma.learningItem.update({
-      where: { id },
+      where: { id, userId },
       data,
     });
   },
 
-  async deleteLearningItem(id: string) {
+  async deleteLearningItem(id: string, userId: string) {
     return prisma.learningItem.delete({
-      where: { id },
+      where: { id, userId },
     });
   },
 };

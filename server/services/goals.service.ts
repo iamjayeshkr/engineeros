@@ -15,6 +15,16 @@ export const goalsService = {
   },
 
   async createGoal(data: CreateGoalInput) {
+    if (data.parentId) {
+      // Without this check, a user could set parentId to a goal they don't
+      // own. The child would still get created, but the progress-cascade
+      // below would then average this goal into a stranger's progress
+      // calculation and overwrite their goal's status — a data-integrity
+      // hole, not just an access one.
+      const parent = await goalsRepository.getGoalById(data.parentId, data.userId);
+      if (!parent) throw new Error("Parent goal not found");
+    }
+
     const goal = await goalsRepository.createGoal(data);
     if (goal.parentId) {
       await this.recalculateParentProgressCascade(goal.parentId);
@@ -22,12 +32,12 @@ export const goalsService = {
     return goal;
   },
 
-  async updateGoal(goalId: string, data: UpdateGoalInput) {
-    const goalBefore = await goalsRepository.getGoalById(goalId);
+  async updateGoal(goalId: string, userId: string, data: UpdateGoalInput) {
+    const goalBefore = await goalsRepository.getGoalById(goalId, userId);
     if (!goalBefore) throw new Error("Goal not found");
 
     // Perform the update
-    const updatedGoal = await goalsRepository.updateGoal(goalId, data);
+    const updatedGoal = await goalsRepository.updateGoal(goalId, userId, data);
 
     // If progress/status was updated, or parent relation changed, trigger cascades
     const progressUpdated = data.progress !== undefined || data.status !== undefined;
@@ -42,11 +52,11 @@ export const goalsService = {
     return updatedGoal;
   },
 
-  async deleteGoal(goalId: string) {
-    const goal = await goalsRepository.getGoalById(goalId);
+  async deleteGoal(goalId: string, userId: string) {
+    const goal = await goalsRepository.getGoalById(goalId, userId);
     if (!goal) throw new Error("Goal not found");
 
-    await goalsRepository.deleteGoal(goalId);
+    await goalsRepository.deleteGoal(goalId, userId);
 
     if (goal.parentId) {
       await this.recalculateParentProgressCascade(goal.parentId);
@@ -81,7 +91,7 @@ export const goalsService = {
     }
 
     // Update parent
-    const updatedParent = await goalsRepository.updateGoal(parentId, {
+    const updatedParent = await goalsRepository.updateGoal(parentId, parentGoal.userId, {
       progress: averageProgress,
       status: newStatus,
     });

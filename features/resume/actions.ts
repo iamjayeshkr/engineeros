@@ -31,10 +31,10 @@ export async function createResumeAction(formData: any) {
 
 export async function updateResumeAction(id: string, formData: any) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const validated = resumeSchema.partial().parse(formData);
 
-    const resume = await resumeService.updateResume(id, validated);
+    const resume = await resumeService.updateResume(id, user.id, validated);
 
     revalidatePath("/resume");
     return { success: true, resume };
@@ -45,8 +45,8 @@ export async function updateResumeAction(id: string, formData: any) {
 
 export async function deleteResumeAction(id: string) {
   try {
-    await requireUser();
-    await resumeService.deleteResume(id);
+    const user = await requireUser();
+    await resumeService.deleteResume(id, user.id);
 
     revalidatePath("/resume");
     return { success: true };

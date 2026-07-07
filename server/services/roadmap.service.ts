@@ -9,11 +9,11 @@ export const roadmapService = {
     return roadmapRepository.createRoadmapItem(data);
   },
 
-  async updateRoadmapItem(id: string, data: UpdateRoadmapInput) {
-    return roadmapRepository.updateRoadmapItem(id, data);
+  async updateRoadmapItem(id: string, userId: string, data: UpdateRoadmapInput) {
+    return roadmapRepository.updateRoadmapItem(id, userId, data);
   },
 
-  async deleteRoadmapItem(id: string) {
-    return roadmapRepository.deleteRoadmapItem(id);
+  async deleteRoadmapItem(id: string, userId: string) {
+    return roadmapRepository.deleteRoadmapItem(id, userId);
   },
 };

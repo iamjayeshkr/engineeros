@@ -47,8 +47,8 @@ export const dsaService = {
     });
   },
 
-  async updateDsaProblem(problemId: string, data: UpdateDsaInput) {
-    const existing = await dsaRepository.getDsaProblemById(problemId);
+  async updateDsaProblem(problemId: string, userId: string, data: UpdateDsaInput) {
+    const existing = await dsaRepository.getDsaProblemById(problemId, userId);
     if (!existing) throw new Error("DSA problem not found");
 
     const updatePayload: UpdateDsaInput = { ...data };
@@ -60,17 +60,17 @@ export const dsaService = {
       updatePayload.nextRevisionAt = this.calculateNextRevisionDate(confidence, solvedAt);
     }
 
-    return dsaRepository.updateDsaProblem(problemId, updatePayload);
+    return dsaRepository.updateDsaProblem(problemId, userId, updatePayload);
   },
 
-  async markAsRevised(problemId: string, newConfidence: number) {
-    const existing = await dsaRepository.getDsaProblemById(problemId);
+  async markAsRevised(problemId: string, userId: string, newConfidence: number) {
+    const existing = await dsaRepository.getDsaProblemById(problemId, userId);
     if (!existing) throw new Error("DSA problem not found");
 
     const solvedAt = new Date();
     const nextRevisionAt = this.calculateNextRevisionDate(newConfidence, solvedAt);
 
-    return dsaRepository.updateDsaProblem(problemId, {
+    return dsaRepository.updateDsaProblem(problemId, userId, {
       confidence: newConfidence,
       solvedAt,
       nextRevisionAt,
@@ -78,7 +78,9 @@ export const dsaService = {
     });
   },
 
-  async deleteDsaProblem(problemId: string) {
-    return dsaRepository.deleteDsaProblem(problemId);
+  async deleteDsaProblem(problemId: string, userId: string) {
+    const existing = await dsaRepository.getDsaProblemById(problemId, userId);
+    if (!existing) throw new Error("DSA problem not found");
+    return dsaRepository.deleteDsaProblem(problemId, userId);
   },
 };

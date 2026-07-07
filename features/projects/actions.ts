@@ -43,10 +43,10 @@ export async function createProjectAction(formData: any) {
 
 export async function updateProjectAction(id: string, formData: any) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const validated = projectSchema.partial().parse(formData);
 
-    const project = await projectsService.updateProject(id, validated);
+    const project = await projectsService.updateProject(id, user.id, validated);
 
     revalidatePath("/projects");
     return { success: true, project };
@@ -57,8 +57,8 @@ export async function updateProjectAction(id: string, formData: any) {
 
 export async function deleteProjectAction(id: string) {
   try {
-    await requireUser();
-    await projectsService.deleteProject(id);
+    const user = await requireUser();
+    await projectsService.deleteProject(id, user.id);
 
     revalidatePath("/projects");
     return { success: true };
@@ -70,10 +70,10 @@ export async function deleteProjectAction(id: string) {
 // Tasks
 export async function createTaskAction(formData: any) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const validated = taskSchema.parse(formData);
 
-    const task = await projectsService.createTask(validated);
+    const task = await projectsService.createTask(user.id, validated);
 
     revalidatePath("/projects");
     return { success: true, task };
@@ -84,10 +84,10 @@ export async function createTaskAction(formData: any) {
 
 export async function updateTaskAction(id: string, projectId: string, formData: any) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const validated = taskSchema.omit({ projectId: true }).partial().parse(formData);
 
-    const task = await projectsService.updateTask(id, projectId, validated);
+    const task = await projectsService.updateTask(id, projectId, user.id, validated);
 
     revalidatePath("/projects");
     return { success: true, task };
@@ -98,8 +98,8 @@ export async function updateTaskAction(id: string, projectId: string, formData: 
 
 export async function deleteTaskAction(id: string, projectId: string) {
   try {
-    await requireUser();
-    await projectsService.deleteTask(id, projectId);
+    const user = await requireUser();
+    await projectsService.deleteTask(id, projectId, user.id);
 
     revalidatePath("/projects");
     return { success: true };

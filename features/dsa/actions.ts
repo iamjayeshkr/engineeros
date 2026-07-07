@@ -46,10 +46,10 @@ export async function createDsaProblemAction(formData: any) {
 
 export async function updateDsaProblemAction(problemId: string, formData: any) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const validated = updateDsaSchema.parse(formData);
 
-    const problem = await dsaService.updateDsaProblem(problemId, validated);
+    const problem = await dsaService.updateDsaProblem(problemId, user.id, validated);
 
     revalidatePath("/dsa");
     revalidatePath("/dashboard");
@@ -62,8 +62,8 @@ export async function updateDsaProblemAction(problemId: string, formData: any) {
 
 export async function markAsRevisedAction(problemId: string, newConfidence: number) {
   try {
-    await requireUser();
-    const problem = await dsaService.markAsRevised(problemId, newConfidence);
+    const user = await requireUser();
+    const problem = await dsaService.markAsRevised(problemId, user.id, newConfidence);
 
     revalidatePath("/dsa");
     revalidatePath("/dashboard");
@@ -76,8 +76,8 @@ export async function markAsRevisedAction(problemId: string, newConfidence: numb
 
 export async function deleteDsaProblemAction(problemId: string) {
   try {
-    await requireUser();
-    await dsaService.deleteDsaProblem(problemId);
+    const user = await requireUser();
+    await dsaService.deleteDsaProblem(problemId, user.id);
 
     revalidatePath("/dsa");
     revalidatePath("/dashboard");

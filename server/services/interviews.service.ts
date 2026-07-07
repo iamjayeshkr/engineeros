@@ -15,24 +15,34 @@ export const interviewsService = {
     return interviewsRepository.createApplication(data);
   },
 
-  async updateApplication(id: string, data: UpdateApplicationInput) {
-    return interviewsRepository.updateApplication(id, data);
+  async updateApplication(id: string, userId: string, data: UpdateApplicationInput) {
+    return interviewsRepository.updateApplication(id, userId, data);
   },
 
-  async deleteApplication(id: string) {
-    return interviewsRepository.deleteApplication(id);
+  async deleteApplication(id: string, userId: string) {
+    return interviewsRepository.deleteApplication(id, userId);
   },
 
-  // Rounds
-  async createRound(data: CreateRoundInput) {
+  // Rounds — InterviewRound has no userId column, so every mutation confirms
+  // ownership through the parent Application before touching anything.
+  async createRound(userId: string, data: CreateRoundInput) {
+    const application = await interviewsRepository.getOwnedApplication(data.applicationId, userId);
+    if (!application) throw new Error("Application not found");
+
     return interviewsRepository.createRound(data);
   },
 
-  async updateRound(id: string, data: UpdateRoundInput) {
-    return interviewsRepository.updateRound(id, data);
+  async updateRound(id: string, userId: string, data: UpdateRoundInput) {
+    const round = await interviewsRepository.getRoundWithOwner(id);
+    if (!round || round.application.userId !== userId) throw new Error("Round not found");
+
+    return interviewsRepository.updateRound(id, round.applicationId, data);
   },
 
-  async deleteRound(id: string) {
-    return interviewsRepository.deleteRound(id);
+  async deleteRound(id: string, userId: string) {
+    const round = await interviewsRepository.getRoundWithOwner(id);
+    if (!round || round.application.userId !== userId) throw new Error("Round not found");
+
+    return interviewsRepository.deleteRound(id, round.applicationId);
   },
 };

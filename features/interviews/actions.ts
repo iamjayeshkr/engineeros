@@ -41,10 +41,10 @@ export async function createApplicationAction(formData: any) {
 
 export async function updateApplicationAction(id: string, formData: any) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const validated = applicationSchema.partial().parse(formData);
 
-    const app = await interviewsService.updateApplication(id, validated);
+    const app = await interviewsService.updateApplication(id, user.id, validated);
 
     revalidatePath("/interviews");
     return { success: true, app };
@@ -55,8 +55,8 @@ export async function updateApplicationAction(id: string, formData: any) {
 
 export async function deleteApplicationAction(id: string) {
   try {
-    await requireUser();
-    await interviewsService.deleteApplication(id);
+    const user = await requireUser();
+    await interviewsService.deleteApplication(id, user.id);
 
     revalidatePath("/interviews");
     return { success: true };
@@ -68,10 +68,10 @@ export async function deleteApplicationAction(id: string) {
 // Rounds
 export async function createRoundAction(formData: any) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const validated = roundSchema.parse(formData);
 
-    const round = await interviewsService.createRound(validated);
+    const round = await interviewsService.createRound(user.id, validated);
 
     revalidatePath("/interviews");
     return { success: true, round };
@@ -82,10 +82,10 @@ export async function createRoundAction(formData: any) {
 
 export async function updateRoundAction(id: string, formData: any) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const validated = roundSchema.omit({ applicationId: true }).partial().parse(formData);
 
-    const round = await interviewsService.updateRound(id, validated);
+    const round = await interviewsService.updateRound(id, user.id, validated);
 
     revalidatePath("/interviews");
     return { success: true, round };
@@ -96,8 +96,8 @@ export async function updateRoundAction(id: string, formData: any) {
 
 export async function deleteRoundAction(id: string) {
   try {
-    await requireUser();
-    await interviewsService.deleteRound(id);
+    const user = await requireUser();
+    await interviewsService.deleteRound(id, user.id);
 
     revalidatePath("/interviews");
     return { success: true };

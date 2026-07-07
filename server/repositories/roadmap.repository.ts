@@ -26,6 +26,7 @@ export const roadmapRepository = {
     return prisma.roadmapItem.findMany({
       where: { userId },
       orderBy: { category: "asc" },
+      take: 500,
     });
   },
 
@@ -44,16 +45,18 @@ export const roadmapRepository = {
     });
   },
 
-  async updateRoadmapItem(id: string, data: UpdateRoadmapInput) {
+  async updateRoadmapItem(id: string, userId: string, data: UpdateRoadmapInput) {
+    // Extended-where scoping: filters by id AND userId, so it throws
+    // "not found" (P2025) rather than updating another user's roadmap item.
     return prisma.roadmapItem.update({
-      where: { id },
+      where: { id, userId },
       data,
     });
   },
 
-  async deleteRoadmapItem(id: string) {
+  async deleteRoadmapItem(id: string, userId: string) {
     return prisma.roadmapItem.delete({
-      where: { id },
+      where: { id, userId },
     });
   },
 };

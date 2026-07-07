@@ -33,13 +33,14 @@ export const goalsRepository = {
   async getGoals(userId: string) {
     return prisma.goal.findMany({
       where: { userId },
-      orderBy: [{ type: "asc" }, { createdAt: "desc" } as any], // Order by type then creation
+      orderBy: [{ type: "asc" }, { createdAt: "desc" }],
+      take: 1000,
     });
   },
 
-  async getGoalById(goalId: string) {
+  async getGoalById(goalId: string, userId?: string) {
     return prisma.goal.findUnique({
-      where: { id: goalId },
+      where: userId ? { id: goalId, userId } : { id: goalId },
       include: {
         children: true,
       },
@@ -66,16 +67,20 @@ export const goalsRepository = {
     });
   },
 
-  async updateGoal(goalId: string, data: UpdateGoalInput) {
+  async updateGoal(goalId: string, userId: string, data: UpdateGoalInput) {
+    // `where: { id, userId }` — Prisma's extended-where support means this
+    // filters by BOTH, not just id. If the goal exists but belongs to a
+    // different user, this throws P2025 ("not found") instead of silently
+    // updating someone else's record.
     return prisma.goal.update({
-      where: { id: goalId },
+      where: { id: goalId, userId },
       data,
     });
   },
 
-  async deleteGoal(goalId: string) {
+  async deleteGoal(goalId: string, userId: string) {
     return prisma.goal.delete({
-      where: { id: goalId },
+      where: { id: goalId, userId },
     });
   },
 

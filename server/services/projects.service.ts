@@ -26,29 +26,39 @@ export const projectsService = {
     return projectsRepository.createProject(data);
   },
 
-  async updateProject(id: string, data: UpdateProjectInput) {
-    return projectsRepository.updateProject(id, data);
+  async updateProject(id: string, userId: string, data: UpdateProjectInput) {
+    return projectsRepository.updateProject(id, userId, data);
   },
 
-  async deleteProject(id: string) {
-    return projectsRepository.deleteProject(id);
+  async deleteProject(id: string, userId: string) {
+    return projectsRepository.deleteProject(id, userId);
   },
 
-  // Tasks
-  async createTask(data: CreateTaskInput) {
+  // Tasks — ProjectTask has no userId column, so every mutation first
+  // confirms the parent project belongs to the caller before touching it.
+  async createTask(userId: string, data: CreateTaskInput) {
+    const project = await projectsRepository.getOwnedProject(data.projectId, userId);
+    if (!project) throw new Error("Project not found");
+
     const task = await projectsRepository.createTask(data);
     await this.syncProjectStatusFromTasks(data.projectId);
     return task;
   },
 
-  async updateTask(id: string, projectId: string, data: UpdateTaskInput) {
-    const task = await projectsRepository.updateTask(id, data);
+  async updateTask(id: string, projectId: string, userId: string, data: UpdateTaskInput) {
+    const project = await projectsRepository.getOwnedProject(projectId, userId);
+    if (!project) throw new Error("Project not found");
+
+    const task = await projectsRepository.updateTask(id, projectId, data);
     await this.syncProjectStatusFromTasks(projectId);
     return task;
   },
 
-  async deleteTask(id: string, projectId: string) {
-    const task = await projectsRepository.deleteTask(id);
+  async deleteTask(id: string, projectId: string, userId: string) {
+    const project = await projectsRepository.getOwnedProject(projectId, userId);
+    if (!project) throw new Error("Project not found");
+
+    const task = await projectsRepository.deleteTask(id, projectId);
     await this.syncProjectStatusFromTasks(projectId);
     return task;
   },
@@ -56,10 +66,7 @@ export const projectsService = {
   async syncProjectStatusFromTasks(projectId: string): Promise<void> {
     // If all tasks are completed, mark project status as DONE
     // If at least one task is IN_PROGRESS, mark project status as IN_PROGRESS
-    const projects = await projectsRepository.getProjects(""); // Fetch dummy to query
-    // Actually it's cleaner to query the tasks of the project
-    // Let's do it in repositories or direct query
-    const project = await prisma?.project.findUnique({
+    const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: { tasks: true },
     });
@@ -76,7 +83,14 @@ export const projectsService = {
     }
 
     if (newStatus !== project.status) {
-      await projectsRepository.updateProject(projectId, { status: newStatus });
+      // Internal cascade, not a user-facing mutation — ownership was already
+      // verified by the caller (createTask/updateTask/deleteTask) before this
+      // ran, so update directly by projectId rather than through the
+      // user-scoped repository method.
+      await prisma.project.update({
+        where: { id: projectId },
+        data: { status: newStatus },
+      });
     }
   }
 };

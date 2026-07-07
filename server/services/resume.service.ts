@@ -9,11 +9,11 @@ export const resumeService = {
     return resumeRepository.createResume(data);
   },
 
-  async updateResume(id: string, data: UpdateResumeInput) {
-    return resumeRepository.updateResume(id, data);
+  async updateResume(id: string, userId: string, data: UpdateResumeInput) {
+    return resumeRepository.updateResume(id, userId, data);
   },
 
-  async deleteResume(id: string) {
-    return resumeRepository.deleteResume(id);
+  async deleteResume(id: string, userId: string) {
+    return resumeRepository.deleteResume(id, userId);
   },
 };

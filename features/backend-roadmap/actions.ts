@@ -33,10 +33,10 @@ export async function createRoadmapItemAction(formData: any) {
 
 export async function updateRoadmapItemAction(id: string, formData: any) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const validated = roadmapSchema.partial().parse(formData);
 
-    const item = await roadmapService.updateRoadmapItem(id, validated);
+    const item = await roadmapService.updateRoadmapItem(id, user.id, validated);
 
     revalidatePath("/roadmap");
     return { success: true, item };
@@ -47,8 +47,8 @@ export async function updateRoadmapItemAction(id: string, formData: any) {
 
 export async function deleteRoadmapItemAction(id: string) {
   try {
-    await requireUser();
-    await roadmapService.deleteRoadmapItem(id);
+    const user = await requireUser();
+    await roadmapService.deleteRoadmapItem(id, user.id);
 
     revalidatePath("/roadmap");
     return { success: true };

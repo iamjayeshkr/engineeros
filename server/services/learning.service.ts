@@ -9,11 +9,11 @@ export const learningService = {
     return learningRepository.createLearningItem(data);
   },
 
-  async updateLearningItem(id: string, data: UpdateLearningInput) {
-    return learningRepository.updateLearningItem(id, data);
+  async updateLearningItem(id: string, userId: string, data: UpdateLearningInput) {
+    return learningRepository.updateLearningItem(id, userId, data);
   },
 
-  async deleteLearningItem(id: string) {
-    return learningRepository.deleteLearningItem(id);
+  async deleteLearningItem(id: string, userId: string) {
+    return learningRepository.deleteLearningItem(id, userId);
   },
 };

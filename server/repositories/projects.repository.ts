@@ -43,6 +43,7 @@ export const projectsRepository = {
       where: { userId },
       include: { tasks: true },
       orderBy: { createdAt: "desc" },
+      take: 500,
     });
   },
 
@@ -62,16 +63,26 @@ export const projectsRepository = {
     });
   },
 
-  async updateProject(id: string, data: UpdateProjectInput) {
+  async updateProject(id: string, userId: string, data: UpdateProjectInput) {
+    // Extended-where scoping: filters by id AND userId, so it throws
+    // "not found" (P2025) rather than updating another user's project.
     return prisma.project.update({
-      where: { id },
+      where: { id, userId },
       data,
     });
   },
 
-  async deleteProject(id: string) {
+  async deleteProject(id: string, userId: string) {
     return prisma.project.delete({
-      where: { id },
+      where: { id, userId },
+    });
+  },
+
+  // Ownership check for the project a task belongs to — ProjectTask has no
+  // userId of its own, so ownership always flows through the parent Project.
+  async getOwnedProject(projectId: string, userId: string) {
+    return prisma.project.findUnique({
+      where: { id: projectId, userId },
     });
   },
 
@@ -82,16 +93,18 @@ export const projectsRepository = {
     });
   },
 
-  async updateTask(id: string, data: UpdateTaskInput) {
+  async updateTask(id: string, projectId: string, data: UpdateTaskInput) {
+    // Scoped by id AND projectId (whose ownership the service layer has
+    // already verified) so a task can't be re-parented onto someone else's project.
     return prisma.projectTask.update({
-      where: { id },
+      where: { id, projectId },
       data,
     });
   },
 
-  async deleteTask(id: string) {
+  async deleteTask(id: string, projectId: string) {
     return prisma.projectTask.delete({
-      where: { id },
+      where: { id, projectId },
     });
   },
 };

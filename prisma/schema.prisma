@@ -116,6 +116,7 @@ model Goal {
 
   @@index([userId, status])
   @@index([userId, dueDate])
+  @@index([parentId])
 }
 
 // ── DSA Tracker ───────────────────────────
@@ -215,6 +216,8 @@ model InterviewRound {
   notes         String?
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
 }
 
 // ── Resume ────────────────────────────────
@@ -228,6 +231,8 @@ model ResumeVersion {
   createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // ── Learning ──────────────────────────────
@@ -241,6 +246,8 @@ model LearningItem {
   highlights Json?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // ── Study Sessions (drives streaks / heatmap / analytics) ──

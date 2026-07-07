@@ -36,12 +36,13 @@ export const dsaRepository = {
     return prisma.dsaProblem.findMany({
       where: { userId },
       orderBy: { solvedAt: "desc" },
+      take: 1000, // safety cap so a long DSA history can't blow past the route's latency budget
     });
   },
 
-  async getDsaProblemById(problemId: string) {
+  async getDsaProblemById(problemId: string, userId?: string) {
     return prisma.dsaProblem.findUnique({
-      where: { id: problemId },
+      where: userId ? { id: problemId, userId } : { id: problemId },
     });
   },
 
@@ -54,6 +55,7 @@ export const dsaRepository = {
         },
       },
       orderBy: { nextRevisionAt: "asc" },
+      take: 200,
     });
   },
 
@@ -77,16 +79,18 @@ export const dsaRepository = {
     });
   },
 
-  async updateDsaProblem(problemId: string, data: UpdateDsaInput) {
+  async updateDsaProblem(problemId: string, userId: string, data: UpdateDsaInput) {
+    // Extended-where scoping: this filters by id AND userId, so it throws
+    // "not found" (P2025) rather than updating another user's problem.
     return prisma.dsaProblem.update({
-      where: { id: problemId },
+      where: { id: problemId, userId },
       data,
     });
   },
 
-  async deleteDsaProblem(problemId: string) {
+  async deleteDsaProblem(problemId: string, userId: string) {
     return prisma.dsaProblem.delete({
-      where: { id: problemId },
+      where: { id: problemId, userId },
     });
   },
 };

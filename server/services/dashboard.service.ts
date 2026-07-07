@@ -15,35 +15,48 @@ export interface DashboardData {
 // Falls back to zeroed data if the user has no rows yet (fresh signup) —
 // keeps the dashboard from erroring on empty states instead of showing skeletons forever.
 export async function getDashboardData(userId: string): Promise<DashboardData> {
-  const [snapshot, sessions, deadlines, goals, dsaProblems, roadmapItems, applications] = await Promise.all([
+  // Previously this pulled every row of goals/dsaProblems/roadmapItems/applications
+  // in full just to call .length and .reduce() on them in JS. That means the
+  // dashboard — the single most-hit route in the app — got linearly slower as a
+  // user's history grew, and shipped rows (tags, notes, metadata JSON, etc.)
+  // over the wire that were never used. Pushing the counting/averaging into the
+  // DB (indexed, aggregate-only) keeps this route's query cost flat regardless
+  // of how much data the user has accumulated.
+  const [
+    snapshot,
+    sessions,
+    deadlines,
+    totalGoals,
+    completedGoalsCount,
+    dsaProblemsCount,
+    roadmapAgg,
+    applicationsCount,
+  ] = await Promise.all([
     dashboardRepository.getUserSnapshot(userId),
     dashboardRepository.getStudySessionsSince(userId, 18 * 7),
     dashboardRepository.getUpcomingDeadlines(userId),
-    prisma.goal.findMany({ where: { userId } }),
-    prisma.dsaProblem.findMany({ where: { userId } }),
-    prisma.roadmapItem.findMany({ where: { userId } }),
-    prisma.application.findMany({ where: { userId } }),
+    prisma.goal.count({ where: { userId } }),
+    prisma.goal.count({ where: { userId, status: "DONE" } }),
+    prisma.dsaProblem.count({ where: { userId } }),
+    prisma.roadmapItem.aggregate({ where: { userId }, _avg: { confidence: true } }),
+    prisma.application.count({ where: { userId } }),
   ]);
 
   // Compute Career Readiness Score
   // 1. Goals Completion Rate (25% weight)
-  const completedGoals = goals.filter((g) => g.status === "DONE").length;
-  const goalRate = goals.length > 0 ? completedGoals / goals.length : 0;
+  const goalRate = totalGoals > 0 ? completedGoalsCount / totalGoals : 0;
 
   // 2. DSA Consistency (25% weight)
   // Target: 50 problems solved
-  const dsaRate = Math.min(1, dsaProblems.length / 50);
+  const dsaRate = Math.min(1, dsaProblemsCount / 50);
 
   // 3. Roadmap Progress (25% weight)
   // confidence is on a 1-5 scale
-  const avgConfidence = roadmapItems.length > 0 
-    ? (roadmapItems.reduce((sum, item) => sum + item.confidence, 0) / roadmapItems.length)
-    : 0;
-  const roadmapRate = avgConfidence / 5;
+  const roadmapRate = (roadmapAgg._avg.confidence ?? 0) / 5;
 
   // 4. Interview Pipeline Health (25% weight)
   // Target: 5 applications logged
-  const interviewRate = Math.min(1, applications.length / 5);
+  const interviewRate = Math.min(1, applicationsCount / 5);
 
   const computedScore = Math.round((goalRate * 0.25 + dsaRate * 0.25 + roadmapRate * 0.25 + interviewRate * 0.25) * 100);
 

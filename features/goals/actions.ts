@@ -46,10 +46,10 @@ export async function createGoalAction(formData: any) {
 
 export async function updateGoalAction(goalId: string, formData: any) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const validated = updateGoalSchema.parse(formData);
 
-    const goal = await goalsService.updateGoal(goalId, validated);
+    const goal = await goalsService.updateGoal(goalId, user.id, validated);
 
     revalidatePath("/goals");
     revalidatePath("/dashboard");
@@ -62,8 +62,8 @@ export async function updateGoalAction(goalId: string, formData: any) {
 
 export async function deleteGoalAction(goalId: string) {
   try {
-    await requireUser();
-    await goalsService.deleteGoal(goalId);
+    const user = await requireUser();
+    await goalsService.deleteGoal(goalId, user.id);
 
     revalidatePath("/goals");
     revalidatePath("/dashboard");

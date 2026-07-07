@@ -33,10 +33,10 @@ export async function createLearningItemAction(formData: any) {
 
 export async function updateLearningItemAction(id: string, formData: any) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const validated = learningSchema.partial().parse(formData);
 
-    const item = await learningService.updateLearningItem(id, validated);
+    const item = await learningService.updateLearningItem(id, user.id, validated);
 
     revalidatePath("/learning");
     return { success: true, item };
@@ -47,8 +47,8 @@ export async function updateLearningItemAction(id: string, formData: any) {
 
 export async function deleteLearningItemAction(id: string) {
   try {
-    await requireUser();
-    await learningService.deleteLearningItem(id);
+    const user = await requireUser();
+    await learningService.deleteLearningItem(id, user.id);
 
     revalidatePath("/learning");
     return { success: true };
