@@ -2,6 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password"];
+// Reachable only via a valid password-recovery link, which establishes a
+// real (recovery) session — so unlike the routes above, a signed-in user
+// must still be allowed to land here. It's public, but exempt from the
+// "already logged in -> bounce to /dashboard" redirect that applies to the
+// other public routes.
+const AUTH_EXEMPT_NO_BOUNCE_ROUTES = ["/reset-password"];
 // Routes that must never be gated behind an auth check. In particular the
 // OAuth callback is hit while the user is still unauthenticated (the code
 // exchange is what creates their session) — without this exclusion, every
@@ -50,9 +56,12 @@ export async function middleware(request: NextRequest) {
     return { data: { user: null }, error: err };
   });
 
-  const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+  const isExemptNoBounce = AUTH_EXEMPT_NO_BOUNCE_ROUTES.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   );
+  const isPublicRoute =
+    PUBLIC_ROUTES.some((route) => request.nextUrl.pathname.startsWith(route)) ||
+    isExemptNoBounce;
 
   if (!user && !isPublicRoute) {
     const redirectUrl = new URL("/login", request.url);
@@ -60,7 +69,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && isPublicRoute) {
+  if (user && isPublicRoute && !isExemptNoBounce) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

@@ -613,22 +613,35 @@ export function GoalsClient({ initialGoals }: { initialGoals: Goal[] }) {
               {/* Dependencies */}
               <div>
                 <label className="block text-[11px] font-medium text-zinc-400 uppercase tracking-wider mb-1">Depends On</label>
-                <select
-                  multiple
-                  value={dependsOnIds}
-                  onChange={(e) => {
-                    const options = Array.from(e.target.selectedOptions, option => option.value);
-                    setDependsOnIds(options);
-                  }}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none h-20"
-                >
-                  {goals
-                    .filter(g => !editingGoal || g.id !== editingGoal.id)
-                    .map(g => (
-                      <option key={g.id} value={g.id}>{g.title}</option>
-                    ))}
-                </select>
-                <p className="text-[10px] text-zinc-500 mt-1">Hold command/ctrl to select multiple dependent goals.</p>
+                <div className="space-y-1.5 max-h-32 overflow-y-auto border border-zinc-800 rounded-md p-2 bg-zinc-950/80">
+                  {goals.filter(g => !editingGoal || g.id !== editingGoal.id).length === 0 ? (
+                    <p className="text-zinc-500 text-xs italic px-1 py-0.5">No other goals available.</p>
+                  ) : (
+                    goals
+                      .filter(g => !editingGoal || g.id !== editingGoal.id)
+                      .map(g => {
+                        const isChecked = dependsOnIds.includes(g.id);
+                        return (
+                          <label key={g.id} className="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-zinc-900 cursor-pointer select-none text-xs text-zinc-300 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setDependsOnIds([...dependsOnIds, g.id]);
+                                } else {
+                                  setDependsOnIds(dependsOnIds.filter(id => id !== g.id));
+                                }
+                              }}
+                              className="rounded bg-zinc-900 border-zinc-850 text-accent focus:ring-accent h-3.5 w-3.5"
+                            />
+                            <span className="truncate">{g.title}</span>
+                          </label>
+                        );
+                      })
+                  )}
+                </div>
+                <p className="text-[10px] text-zinc-500 mt-1">Select one or more goals this goal depends on.</p>
               </div>
 
               {/* Form buttons */}

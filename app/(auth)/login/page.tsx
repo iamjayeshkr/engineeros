@@ -5,18 +5,41 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { OAuthButtons } from "@/features/auth/components/oauth-buttons";
-import { signInWithEmail } from "@/lib/auth/actions";
+import { signInWithEmail, resendVerificationEmail } from "@/lib/auth/actions";
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [resendPending, setResendPending] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setPending(true);
     setError(null);
+    setUnconfirmedEmail(null);
+    setResendMessage(null);
+
     const result = await signInWithEmail(formData);
-    if (result?.error) setError(result.error);
+    if (result?.error) {
+      setError(result.error);
+      if (result.unconfirmed) {
+        setUnconfirmedEmail(String(formData.get("email") ?? ""));
+      }
+    }
     setPending(false);
+  }
+
+  async function handleResend() {
+    if (!unconfirmedEmail) return;
+    setResendPending(true);
+    setResendMessage(null);
+    const form = new FormData();
+    form.set("email", unconfirmedEmail);
+    const result = await resendVerificationEmail(form);
+    if (result?.success) setResendMessage(result.success);
+    if (result?.error) setResendMessage(result.error);
+    setResendPending(false);
   }
 
   return (
@@ -45,6 +68,20 @@ export default function LoginPage() {
             <Input name="password" type="password" placeholder="Password" required />
 
             {error && <p className="text-sm text-danger">{error}</p>}
+
+            {unconfirmedEmail && (
+              <div className="text-xs text-zinc-400 space-y-1">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendPending}
+                  className="text-accent hover:underline disabled:opacity-50"
+                >
+                  {resendPending ? "Sending…" : "Resend confirmation email"}
+                </button>
+                {resendMessage && <p className="text-zinc-500">{resendMessage}</p>}
+              </div>
+            )}
 
             <div className="flex items-center justify-between text-sm">
               <Link href="/forgot-password" className="text-zinc-400 hover:text-zinc-200">
